@@ -1,6 +1,7 @@
 using HighFreqBidder;
 using Microsoft.AspNetCore.Mvc;
 using Aerospike.Client;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -20,7 +21,19 @@ builder.Services.AddSingleton<AerospikeClient>(aerospikeClient);
 builder.Services.AddSingleton<BidChannel>(); //One rail instance to be shared
 builder.Services.AddHostedService<BidWorker>(); //Background service to process bids
 
+//Security setup
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+}).AddJwtBearer();
+
+builder.Services.AddAuthorization();
+
 var app = builder.Build();
+
+app.UseAuthentication(); //Identification
+app.UseAuthorization(); //Access control
 
 //close connection to db cleanly on shutdown
 app.Lifetime.ApplicationStopping.Register(() =>
@@ -39,6 +52,6 @@ app.MapPost("/bid", (BidRequest bidRequest, BidChannel bidChannel) =>
     {
         return Results.StatusCode(503); //Service Unavailable - our channel is full
     }
-});
+}).RequireAuthorization();
 
 app.Run();
