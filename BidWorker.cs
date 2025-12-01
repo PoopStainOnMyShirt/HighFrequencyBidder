@@ -1,17 +1,20 @@
 namespace HighFreqBidder;
+using Aerospike.Client;
 
 public class BidWorker: BackgroundService
 {
     private readonly BidChannel _bidChannel;
     private readonly ILogger<BidWorker> _logger;
+    private readonly AerospikeClient _aerospikeClient;
 
     //CTOR
     //System responsible for giving channel and logger. We do not create these.
 
-    public BidWorker(BidChannel bidChannel, ILogger<BidWorker> logger)
+    public BidWorker(BidChannel bidChannel, ILogger<BidWorker> logger, AerospikeClient aerospikeClient)
     {
         _bidChannel = bidChannel;
         _logger = logger;
+        _aerospikeClient = aerospikeClient;
     }
 
     //This method starts automatically when the app turns on.
@@ -25,7 +28,19 @@ public class BidWorker: BackgroundService
             try
             {
                 _logger.LogInformation($"Processing Order: {bidRequest.RequestId} from {bidRequest.Country} for amount ${bidRequest.BidAmount}");
-                await Task.Delay(10); //Simulate small processing time
+                var key = new Key("test", "bids", bidRequest.RequestId);
+                
+                //Columns(Bins) defintion
+                var bins = new Bin[]
+                {
+                    new Bin("device", bidRequest.DeviceId),
+                    new Bin("country", bidRequest.Country),
+                    new Bin("amount", bidRequest.BidAmount),
+                    new Bin("timestamp", DateTime.Now.Ticks)
+                };
+
+                _aerospikeClient.Put(null, key, bins);
+                _logger.LogInformation($"Bid Request {bidRequest.RequestId} stored successfully.");
             }
             catch(Exception ex)
             {
