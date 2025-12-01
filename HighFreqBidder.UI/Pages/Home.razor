@@ -1,0 +1,88 @@
+﻿@page "/"
+@using System.Net.Http.Json
+@using System.Net.Http.Headers 
+@inject HttpClient Http
+
+<PageTitle>Live Bidder</PageTitle>
+
+<div class="container">
+    <h1>🚀 High-Speed Bidder</h1>
+    
+    <div class="card">
+        <h3>Place your Bid</h3>
+        
+        <label>Country:</label>
+        <input @bind="country" placeholder="US, UK, IN..." />
+        
+        <label>Bid Amount ($):</label>
+        <input @bind="amount" type="number" />
+        
+        <button class="btn-primary" @onclick="PlaceBid">🔥 Place Bid Now</button>
+    </div>
+
+    @if (message != null)
+    {
+        <p class="status" style="color: @statusColor">@message</p>
+    }
+</div>
+
+@code {
+    private string country = "US";
+    private int amount = 100;
+    private string message;
+    private string statusColor = "black";
+
+    // PASTE YOUR LONG TOKEN HERE ↓
+    private string jwtToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1bmlxdWVfbmFtZSI6ImpveW9qIiwic3ViIjoiam95b2oiLCJqdGkiOiI0NjZiYWViOCIsImF1ZCI6WyJodHRwOi8vbG9jYWxob3N0OjUwNTAiLCJodHRwczovL2xvY2FsaG9zdDo3MDExIl0sIm5iZiI6MTc2NDYxMzg1NCwiZXhwIjoxNzcyMzg5ODU0LCJpYXQiOjE3NjQ2MTM4NTUsImlzcyI6ImRvdG5ldC11c2VyLWp3dHMifQ.S9Vx7WZwm8ocaZYcsSMOIj65A6byxYswW7jHRBJaBeo";
+
+    private async Task PlaceBid()
+    {
+        try 
+        {
+            var bid = new 
+            {
+                requestId = Guid.NewGuid().ToString(),
+                deviceId = "browser-user",
+                country = country,
+                bidAmount = amount
+            };
+
+            // 1. ATTACH THE TOKEN (The Key to the Door)
+            Http.DefaultRequestHeaders.Authorization = 
+                new AuthenticationHeaderValue("Bearer", jwtToken);
+
+            // 2. SEND REQUEST
+            var response = await Http.PostAsJsonAsync("http://localhost:5050/bid", bid);
+
+            if (response.IsSuccessStatusCode)
+            {
+                message = "✅ Bid Accepted! Processing...";
+                statusColor = "green";
+            }
+            else if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            {
+                message = "⛔ 401 Unauthorized: Your Token is invalid or expired.";
+                statusColor = "red";
+            }
+            else
+            {
+                message = $"❌ Bid Rejected: {response.ReasonPhrase}";
+                statusColor = "red";
+            }
+        }
+        catch (Exception ex)
+        {
+            message = $"❌ Error: {ex.Message}";
+            statusColor = "red";
+        }
+    }
+}
+
+<style>
+    .container { max-width: 500px; margin: 50px auto; font-family: sans-serif; }
+    .card { border: 1px solid #ccc; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+    input { display: block; width: 100%; padding: 10px; margin-bottom: 15px; }
+    .btn-primary { background-color: #007bff; color: white; border: none; padding: 10px 20px; cursor: pointer; width: 100%; font-size: 1.2rem; }
+    .btn-primary:hover { background-color: #0056b3; }
+    .status { margin-top: 20px; font-weight: bold; text-align: center; }
+</style>

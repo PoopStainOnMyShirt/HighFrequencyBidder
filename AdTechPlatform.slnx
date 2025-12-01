@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="HighFreqBidder.UI/HighFreqBidder.UI.csproj" />
+  <Project Path="HighFreqBidder/HighFreqBidder.csproj" />
+</Solution>

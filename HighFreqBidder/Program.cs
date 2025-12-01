@@ -30,7 +30,19 @@ builder.Services.AddAuthentication(options =>
 
 builder.Services.AddAuthorization();
 
+//Code to allow locally hosted API to talk to local Blazor app
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll",
+    builder =>
+    {
+        builder.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader();
+    });
+});
+
 var app = builder.Build();
+
+app.UseCors("AllowAll");
 
 app.UseAuthentication(); //Identification
 app.UseAuthorization(); //Access control
